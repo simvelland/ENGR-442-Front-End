@@ -69,7 +69,10 @@
 
         // Function to fetch weather data
         function getWeather(lat, lon) {
-            let weather_url = `https://power.larc.nasa.gov/api/temporal/daily/point?start=20240101&end=20240102&latitude=${lat}&longitude=${lon}&community=RE&parameters=ALLSKY_SFC_SW_DWN,T2M,RH2M,WS2M,PS,CLOUD_AMT&format=JSON`;
+            let today = new Date();
+            let formattedDate = today.toISOString().split('T')[0].replace(/-/g, "");
+            
+            let weather_url = `https://power.larc.nasa.gov/api/temporal/daily/point?start=${formattedDate}&end=${formattedDate}&latitude=${lat}&longitude=${lon}&community=RE&parameters=ALLSKY_SFC_SW_DWN,T2M,RH2M,WS2M,PS,CLOUD_AMT&format=JSON`;
 
             fetch(weather_url)
             .then(response => response.json())
