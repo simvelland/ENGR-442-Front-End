@@ -1,60 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Solar Power Prediction</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar Power Prediction</title>
 
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet CSS for interactive map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-        <style>
-            body {
-                font-family: Arial, Helvetica, sans-serif;
-                text-align: center;
-                margin: 50px;
-            }
-            input, button {
-                margin: 10px;
-                padding: 5px;
-                width: 200px;
-            }
-            button {
-                background-color: #4CAF50;
-                color: white;
-                border: none;
-                cursor: pointer;
-            }
-            button:hover {
-                background-color: 45a049;
-            }
-            #result {
-                font-weight: bold;
-                margin-top: 20px;
-            }
-            #map {
-                height: 400px;
-                width: 80%;
-                margin: auto;
-            }
-        </style>
-    </head>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+        input, button { margin: 10px; padding: 5px; width: 200px; }
+        button { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        #result { font-weight: bold; margin-top: 20px; }
+        #map { height: 400px; width: 80%; margin: auto; }
+    </style>
+</head>
+<body>
 
-    <body>
-        <h2>Solar Power Prediction</h2>
+    <h2>Solar Power Prediction</h2>
 
-        <div id="map"></div>
+    <div id="map"></div> <!-- Interactive Map -->
 
-        <p><strong>Selected Location:</strong><span id="location"></span></p>
+    <p><strong>Selected Location:</strong> <span id="location"></span></p>
 
-        <label for="irradiance">Solar Irradiance:</label>
-        <input type="number" id="irradiance" step="0.1">
-        <br></br>
+    <label for="irradiance">Solar Irradiance:</label>
+    <input type="number" id="irradiance" step="0.1">
+    <br>
 
-        <label for="temp">Temperature (2m):</label>
-        <input type="number" id="temp" step="0.1">
-        <br>
+    <label for="temp">Temperature (2m):</label>
+    <input type="number" id="temp" step="0.1">
+    <br>
 
-        <label for="humidity">Relative Humidity (2m):</label>
+    <label for="humidity">Relative Humidity (2m):</label>
     <input type="number" id="humidity" step="0.1">
     <br>
 
@@ -69,27 +48,31 @@
     <label for="cloud">Cloud Amount:</label>
     <input type="number" id="cloud" step="0.1">
     <br>
-
+    
     <button onclick="predict()">Predict</button>
 
     <h3>Predicted Daily Solar Power: <span id="result"></span></h3>
 
+    <!-- Leaflet JS for Map -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        var map = L.map('map').setView([20, 0], 2);
+        // Initialize the map
+        var map = L.map('map').setView([20, 0], 2); // Default world view
 
-        L.titleLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
-        
+
         var marker;
 
+        // Function to fetch weather data
         function getWeather(lat, lon) {
-            let weather_url = 'https://power.larc.nasa.gov/api/temporal/daily/point?start=20240101&end=20240102&latitude=${lat}&longitude=${lon}&community=RE&parameters=ALLSKY_SFC_SW_DWN,T2M,RH2M,WS2M,PS,CLOUD_AMT&format=JSON'
+            let weather_url = `https://power.larc.nasa.gov/api/temporal/daily/point?start=20240101&end=20240102&latitude=${lat}&longitude=${lon}&community=RE&parameters=ALLSKY_SFC_SW_DWN,T2M,RH2M,WS2M,PS,CLOUD_AMT&format=JSON`;
 
             fetch(weather_url)
-            .then(resposne => response.json())
+            .then(response => response.json())
             .then(data => {
                 let weather_data = data.properties.parameter;
                 document.getElementById("irradiance").value = weather_data.ALLSKY_SFC_SW_DWN[20240101];
@@ -99,23 +82,28 @@
                 document.getElementById("pressure").value = weather_data.PS[20240101];
                 document.getElementById("cloud").value = weather_data.CLOUD_AMT[20240101];
             })
-            .catch(error => console.error("Error fetching weather data:", error))
+            .catch(error => console.error("Error fetching weather data:", error));
         }
 
+        // Function to handle map click
         function onMapClick(e) {
             let lat = e.latlng.lat.toFixed(2);
             let lon = e.latlng.lng.toFixed(2);
             document.getElementById("location").innerText = `Lat: ${lat}, Lon: ${lon}`;
 
+            // Remove previous marker if exists
             if (marker) map.removeLayer(marker);
 
+            // Add new marker
             marker = L.marker([lat, lon]).addTo(map);
 
+            // Fetch weather data for selected location
             getWeather(lat, lon);
         }
 
-        map.on(click, onMapClick);
+        map.on('click', onMapClick);
 
+        // Function to send prediction request
         function predict() {
             let data = {
                 "Solar_Irradiance": parseFloat(document.getElementById("irradiance").value),
@@ -138,6 +126,6 @@
             .catch(error => { console.error("Error:", error); });
         }
     </script>
-    
+
 </body>
 </html>
