@@ -1,48 +1,60 @@
 <!DOCTYPE html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solar Power Prediction</title>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Solar Power Prediction</title>
 
-    <style>
-        body { 
-            font-family: Arial, Helvetica, sans-serif;
-            text-align: center;
-            margin: 50px;
-        }
-        input {
-            margin: 10px;
-            padding: 5px;
-            width: 200px;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        #result{
-            font-weight: bold;
-            margin-top: 20px;
-        }
-    </style>
-</head>
-<body>
-    <h2>Solar Power Prediction</h2>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-    <label for="irradiance">Solar Irradiance:</label>
-    <input type="number" id="irradiance" step="0.1">
-    <br>
+        <style>
+            body {
+                font-family: Arial, Helvetica, sans-serif;
+                text-align: center;
+                margin: 50px;
+            }
+            input, button {
+                margin: 10px;
+                padding: 5px;
+                width: 200px;
+            }
+            button {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                cursor: pointer;
+            }
+            button:hover {
+                background-color: 45a049;
+            }
+            #result {
+                font-weight: bold;
+                margin-top: 20px;
+            }
+            #map {
+                height: 400px;
+                width: 80%;
+                margin: auto;
+            }
+        </style>
+    </head>
 
-    <label for="temp">Temperature (2m):</label>
-    <input type="number" id="temp" step="0.1">
-    <br>
+    <body>
+        <h2>Solar Power Prediction</h2>
 
-    <label for="humidity">Relative Humidity (2m):</label>
+        <div id="map"></div>
+
+        <p><strong>Selected Location:</strong><span id="location"></span></p>
+
+        <label for="irradiance">Solar Irradiance:</label>
+        <input type="number" id="irradiance" step="0.1">
+        <br></br>
+
+        <label for="temp">Temperature (2m):</label>
+        <input type="number" id="temp" step="0.1">
+        <br>
+
+        <label for="humidity">Relative Humidity (2m):</label>
     <input type="number" id="humidity" step="0.1">
     <br>
 
@@ -57,12 +69,53 @@
     <label for="cloud">Cloud Amount:</label>
     <input type="number" id="cloud" step="0.1">
     <br>
-    
+
     <button onclick="predict()">Predict</button>
 
     <h3>Predicted Daily Solar Power: <span id="result"></span></h3>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <script>
+        var map = L.map('map').setView([20, 0], 2);
+
+        L.titleLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        var marker;
+
+        function getWeather(lat, lon) {
+            let weather_url = 'https://power.larc.nasa.gov/api/temporal/daily/point?start=20240101&end=20240102&latitude=${lat}&longitude=${lon}&community=RE&parameters=ALLSKY_SFC_SW_DWN,T2M,RH2M,WS2M,PS,CLOUD_AMT&format=JSON'
+
+            fetch(weather_url)
+            .then(resposne => response.json())
+            .then(data => {
+                let weather_data = data.properties.parameter;
+                document.getElementById("irradiance").value = weather_data.ALLSKY_SFC_SW_DWN[20240101];
+                document.getElementById("temp").value = weather_data.T2M[20240101];
+                document.getElementById("humidity").value = weather_data.RH2M[20240101];
+                document.getElementById("wind").value = weather_data.WS2M[20240101];
+                document.getElementById("pressure").value = weather_data.PS[20240101];
+                document.getElementById("cloud").value = weather_data.CLOUD_AMT[20240101];
+            })
+            .catch(error => console.error("Error fetching weather data:", error))
+        }
+
+        function onMapClick(e) {
+            let lat = e.latlng.lat.toFixed(2);
+            let lon = e.latlng.lng.toFixed(2);
+            document.getElementById("location").innerText = `Lat: ${lat}, Lon: ${lon}`;
+
+            if (marker) map.removeLayer(marker);
+
+            marker = L.marker([lat, lon]).addTo(map);
+
+            getWeather(lat, lon);
+        }
+
+        map.on(click, onMapClick);
+
         function predict() {
             let data = {
                 "Solar_Irradiance": parseFloat(document.getElementById("irradiance").value),
@@ -79,9 +132,12 @@
                 body: JSON.stringify(data)
             })
             .then(response => response.json())
-            .then(data => { document.getElementById("result").innerText = data.predicted_daily_solar_power; })
+            .then(data => { 
+                document.getElementById("result").innerText = data.predicted_daily_solar_power; 
+            })
             .catch(error => { console.error("Error:", error); });
         }
     </script>
+    
 </body>
 </html>
