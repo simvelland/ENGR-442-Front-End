@@ -91,7 +91,7 @@
         function onMapClick(e) {
             let lat = e.latlng.lat.toFixed(2);
             let lon = e.latlng.lng.toFixed(2);
-            document.getElementById("location").innerText = `Lat: ${lat}, Lon: ${lon}`;
+            document.getElementById("location").innerText = 'Lat: ${lat}, Lon: ${lon}';
 
             // Remove previous marker if exists
             if (marker) map.removeLayer(marker);
