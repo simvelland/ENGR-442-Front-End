@@ -68,25 +68,40 @@
         var marker;
 
     function getWeather(lat, lon) {
-    
     let today = new Date();
-    let formattedDate = today.toISOString().split('T')[0].replace(/-/g, "");  // Converts to YYYYMMDD
+    let formattedDate = today.toISOString().split('T')[0].replace(/-/g, ""); // Converts to YYYYMMDD
 
     let weather_url = `https://power.larc.nasa.gov/api/temporal/daily/point?start=${formattedDate}&end=${formattedDate}&latitude=${lat}&longitude=${lon}&community=RE&parameters=ALLSKY_SFC_SW_DWN,T2M,RH2M,WS2M,PS,CLOUD_AMT&format=JSON`;
 
     fetch(weather_url)
     .then(response => response.json())
     .then(data => {
+        console.log("NASA POWER API Response:", data); // Debugging step
+
+        // Check if the response contains valid parameters
+        if (!data.properties || !data.properties.parameter) {
+            console.error("Invalid NASA POWER API response:", data);
+            alert("Weather data could not be retrieved. Try another location.");
+            return;
+        }
+
         let weather_data = data.properties.parameter;
-        document.getElementById("irradiance").value = weather_data.ALLSKY_SFC_SW_DWN[formattedDate];
-        document.getElementById("temp").value = weather_data.T2M[formattedDate];
-        document.getElementById("humidity").value = weather_data.RH2M[formattedDate];
-        document.getElementById("wind").value = weather_data.WS2M[formattedDate];
-        document.getElementById("pressure").value = weather_data.PS[formattedDate];
-        document.getElementById("cloud").value = weather_data.CLOUD_AMT[formattedDate];
+
+        // Ensure each field is available before setting values
+        document.getElementById("irradiance").value = weather_data["ALLSKY_SFC_SW_DWN"]?.[formattedDate] ?? "N/A";
+        document.getElementById("temp").value = weather_data["T2M"]?.[formattedDate] ?? "N/A";
+        document.getElementById("humidity").value = weather_data["RH2M"]?.[formattedDate] ?? "N/A";
+        document.getElementById("wind").value = weather_data["WS2M"]?.[formattedDate] ?? "N/A";
+        document.getElementById("pressure").value = weather_data["PS"]?.[formattedDate] ?? "N/A";
+        document.getElementById("cloud").value = weather_data["CLOUD_AMT"]?.[formattedDate] ?? "N/A";
+
     })
-    .catch(error => console.error("Error fetching weather data:", error));
+    .catch(error => {
+        console.error("Error fetching weather data:", error);
+        alert("Failed to fetch weather data.");
+    });
 }
+
 
 
         // Function to handle map click
