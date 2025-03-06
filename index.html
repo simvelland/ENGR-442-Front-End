@@ -14,7 +14,7 @@
         button { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
         button:hover { background-color: #45a049; }
         #result { font-weight: bold; margin-top: 20px; }
-        #map { height: 400px; width: 80%; margin: auto; }
+        #map { height: 400px; width: 80%; margin: auto; border: 1px solid black; }
     </style>
 </head>
 <body>
@@ -23,7 +23,7 @@
 
     <div id="map"></div> <!-- Interactive Map -->
 
-    <p><strong>Selected Location:</strong> <span id="location"></span></p>
+    <p><strong>Selected Location:</strong> <span id="location">None</span></p>
 
     <label for="irradiance">Solar Irradiance:</label>
     <input type="number" id="irradiance" step="0.1">
@@ -51,7 +51,7 @@
     
     <button onclick="predict()">Predict</button>
 
-    <h3>Predicted Daily Solar Power: <span id="result"></span></h3>
+    <h3>Predicted Daily Solar Power: <span id="result">N/A</span></h3>
 
     <!-- Leaflet JS for Map -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -72,12 +72,19 @@
 
         // Function to fetch real-time weather data from OpenWeatherMap
         function getWeather(lat, lon) {
-            let weather_url = `https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={lon}&appid={API_KEY};
+            let weather_url = `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&appid={API_KEY}`;
 
             fetch(weather_url)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Failed to fetch weather data.");
+                }
+                return response.json();
+            })
             .then(data => {
-                document.getElementById("irradiance").value = data.clouds.all;  // Approximate proxy for solar irradiance
+                console.log("Weather Data:", data); // Debugging output
+
+                document.getElementById("irradiance").value = data.clouds.all; // Approximate solar irradiance proxy
                 document.getElementById("temp").value = data.main.temp;
                 document.getElementById("humidity").value = data.main.humidity;
                 document.getElementById("wind").value = data.wind.speed;
@@ -91,7 +98,7 @@
         function onMapClick(e) {
             let lat = e.latlng.lat.toFixed(2);
             let lon = e.latlng.lng.toFixed(2);
-            document.getElementById("location").innerText = 'Lat: ${lat}, Lon: ${lon}';
+            document.getElementById("location").innerText = `Lat: ${lat}, Lon: ${lon}`;
 
             // Remove previous marker if exists
             if (marker) map.removeLayer(marker);
@@ -103,6 +110,7 @@
             getWeather(lat, lon);
         }
 
+        // Attach event listener to map
         map.on('click', onMapClick);
 
         // Function to send prediction request
