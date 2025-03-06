@@ -25,7 +25,7 @@
 
     <p><strong>Selected Location:</strong> <span id="location">None</span></p>
 
-    <label for="irradiance">Solar Irradiance:</label>
+    <label for="irradiance">Solar Irradiance (Approx):</label>
     <input type="number" id="irradiance" step="0.1">
     <br>
 
@@ -57,8 +57,8 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // OpenWeatherMap API Key
-        const API_KEY = "61571277be9f76aa450491a46e1a1559";
+        // WeatherAPI Key
+        const API_KEY = "78abce0c03004028baf61714250603";
 
         // Initialize the map
         var map = L.map('map').setView([20, 0], 2); // Default world view
@@ -70,26 +70,27 @@
 
         var marker;
 
-        // Function to fetch real-time weather data from OpenWeatherMap
+        // Function to fetch real-time weather data from WeatherAPI
         function getWeather(lat, lon) {
-            let weather_url = 'https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&appid=122ca9f49921042bfe34e4113bdca44c';
+            let weather_url = `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=${lat},${lon}&aqi=no`;
 
             fetch(weather_url)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error("Failed to fetch weather data.");
+                    throw new Error("Failed to fetch weather data. Status: " + response.status);
                 }
                 return response.json();
             })
             .then(data => {
                 console.log("Weather Data:", data); // Debugging output
 
-                document.getElementById("irradiance").value = data.clouds.all; // Approximate solar irradiance proxy
-                document.getElementById("temp").value = data.main.temp;
-                document.getElementById("humidity").value = data.main.humidity;
-                document.getElementById("wind").value = data.wind.speed;
-                document.getElementById("pressure").value = data.main.pressure;
-                document.getElementById("cloud").value = data.clouds.all;
+                // Populate form fields with weather data
+                document.getElementById("irradiance").value = 100 - data.current.cloud; // Approximate solar irradiance
+                document.getElementById("temp").value = data.current.temp_c;
+                document.getElementById("humidity").value = data.current.humidity;
+                document.getElementById("wind").value = (data.current.wind_kph / 3.6).toFixed(2); // Convert km/h to m/s
+                document.getElementById("pressure").value = data.current.pressure_mb;
+                document.getElementById("cloud").value = data.current.cloud;
             })
             .catch(error => console.error("Error fetching weather data:", error));
         }
@@ -129,7 +130,12 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data)
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Prediction request failed.");
+                }
+                return response.json();
+            })
             .then(data => { 
                 document.getElementById("result").innerText = data.predicted_daily_solar_power; 
             })
